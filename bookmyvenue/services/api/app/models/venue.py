@@ -1,15 +1,15 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from sqlalchemy import DateTime, Integer, String, ForeignKey
+from sqlalchemy import DateTime, Integer, String, ForeignKey, Enum
 from sqlalchemy.orm import Mapped, mapped_column
 from .user import User
-from enum import Enum
+import enum
 
 from database import Base
 
 
-class StatusEnum(Enum):
+class StatusEnum(enum.Enum):
     ACTIVE = "active"
     INACTIVE = "inactive"
 
@@ -27,6 +27,6 @@ class Venue(Base):
     price_per_hour: Mapped[int] = mapped_column(Integer, nullable=False)
     amenities: Mapped[str] = mapped_column(String(500), nullable=True)
     status: Mapped[StatusEnum] = mapped_column(
-        String(20), nullable=False, default=StatusEnum.ACTIVE)
+        Enum(StatusEnum), nullable=False, default=StatusEnum.ACTIVE)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC))
