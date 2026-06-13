@@ -10,7 +10,7 @@ from schemas.auth import UserRegister, UserOut, UserLogin, Token
 from database import get_db
 import os
 
-from models.user import User
+from models.user import User, RoleEnum
 from utils.hashing import hash_password, verify_password
 from utils.jwt import verify_access_token, create_access_token
 
@@ -29,6 +29,7 @@ def create_user(user: UserRegister, db: Annotated[Session, Depends(get_db)]):
     result = db.execute(select(User).where(func.lower(User.email) == user.email.lower(),
                                            ),
                         )
+    print(user.role, "---role")
     existing_user = result.scalars().first()
     if existing_user:
         raise HTTPException(
@@ -39,7 +40,8 @@ def create_user(user: UserRegister, db: Annotated[Session, Depends(get_db)]):
     new_user = User(
         name=user.name,
         email=user.email.lower(),
-        password_hash=hash_password(user.password)
+        password_hash=hash_password(user.password),
+        role=RoleEnum(user.role.lower()),
     )
     db.add(new_user)
     db.commit()
@@ -58,12 +60,14 @@ def login_for_access_token(
 
     result = db.execute(select(User).where(
         func.lower(User.email) == form_data.username.lower()))
-
     user = result.scalars().first()
-    print(user)
-    if not user or not verify_password(form_data.password, user.password_hash):
-        print(user)
-        print(verify_password(form_data.password, user.password_hash))
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or passwords",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if not verify_password(form_data.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or passwords",
