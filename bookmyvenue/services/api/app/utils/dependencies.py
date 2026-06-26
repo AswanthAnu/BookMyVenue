@@ -4,9 +4,10 @@ from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
-from models.user import User
+from models.user import User, RoleEnum
 from database import get_db
 from utils.jwt import verify_access_token
+
 
 
 oauth2_sheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
@@ -43,3 +44,16 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"}
         )
     return user
+
+
+
+def require_role(required_role: RoleEnum):
+    def role_checker(current_user: User = Depends(get_current_user)):
+        if current_user.role != required_role:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not allowed to perform this action"
+            )
+        return current_user
+
+    return role_checker
