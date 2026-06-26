@@ -21,7 +21,7 @@ app = FastAPI()
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(venue_category.router,
                    prefix="/api/categories", tags=[" Venue Categories"])
-app.include_router(venue.router, prefix="/venues", tags=["Venue"])
+app.include_router(venue.router, prefix="/api/venues", tags=["Venue"])
 
 app.add_middleware(
     CORSMiddleware,

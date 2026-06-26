@@ -3,10 +3,11 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import BookerDashboard from "./pages/bookerDashboard";
-import OwnerDashboard from "./pages/OwnerDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
+import CreateVenue from "./pages/owner/CreateVenue";
+import OwnerDashboard from "./pages/owner/OwnerDashboard";
 
 function App() {
   return (
@@ -30,7 +31,7 @@ function App() {
           <Route
             path="/owner/dashboard"
             element={
-              <ProtectedRoute allowedRoles={["RoleEnum.OWNER"]}>
+              <ProtectedRoute allowedRoles={["owner"]}>
                 <OwnerDashboard />
               </ProtectedRoute>
             }
@@ -41,6 +42,15 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={["RoleEnum.ADMIN"]}>
                 <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/owner/create-venue"
+            element={
+              <ProtectedRoute allowedRoles={["owner"]}>
+                <CreateVenue />
               </ProtectedRoute>
             }
           />
