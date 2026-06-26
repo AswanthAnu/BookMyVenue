@@ -58,9 +58,11 @@ def login_for_access_token(
         form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
         db: Annotated[Session, Depends(get_db)]):
 
-    result = db.execute(select(User).where(
-        func.lower(User.email) == form_data.username.lower()))
+    email = form_data.username.strip().lower()
+
+    result = db.execute(select(User).where(User.email == email))
     user = result.scalars().first()
+    print("user login", user)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -77,7 +79,7 @@ def login_for_access_token(
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": str(user.id),
-              "role": str(user.role)},
+              "role": str(user.role.value)},
         expires_delta=access_token_expires,
 
     )

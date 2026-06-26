@@ -2,12 +2,10 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from sqlalchemy import DateTime, Integer, String, Enum
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 import enum
 
 from database import Base
-
-# Define possible roles using Enum
 
 
 class RoleEnum(enum.Enum):
@@ -19,7 +17,8 @@ class RoleEnum(enum.Enum):
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True, index=True)
     name: Mapped[str] = mapped_column(String(50), nullable=False)
     email: Mapped[str] = mapped_column(
         String(120), unique=True, nullable=False)
@@ -28,3 +27,5 @@ class User(Base):
         Enum(RoleEnum), nullable=False, default=RoleEnum.BOOKER)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC))
+
+    venues = relationship("Venue", back_populates="owner")

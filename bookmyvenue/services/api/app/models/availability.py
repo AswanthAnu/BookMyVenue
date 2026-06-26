@@ -5,8 +5,8 @@ from sqlalchemy import DateTime, Integer, ForeignKey, Date, Boolean, Enum
 from sqlalchemy.orm import Mapped, mapped_column
 import enum
 
-from .venue import Venue
 from database import Base
+from .venue import Venue
 
 
 class StatusEnum(enum.Enum):
@@ -20,7 +20,7 @@ class Availability(Base):
     __tablename__ = "availabilities"
 
     id: Mapped[int] = mapped_column(
-        Integer, primary_key=True, nullable=False, index=True)
+        Integer, primary_key=True, nullable=False, autoincrement=True, index=True)
     venue_id: Mapped[int] = mapped_column(
         ForeignKey(Venue.id), nullable=False, index=True)
     date: Mapped[datetime] = mapped_column(
