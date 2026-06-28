@@ -8,13 +8,14 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
 import CreateVenue from "./pages/owner/CreateVenue";
 import OwnerDashboard from "./pages/owner/OwnerDashboard";
+import Home from "./pages/Home";
 
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<Home />} />
 
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />

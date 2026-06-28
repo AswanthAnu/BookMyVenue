@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "../../context/AuthContext";
-import { createVenue } from "../../api/venue";
+import { createVenue } from "../../api/venues";
 import { getCategories } from "../../api/categories";
 
 function CreateVenue() {
