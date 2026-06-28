@@ -1,18 +1,25 @@
-from typing import Annotated, List
-from fastapi import APIRouter, HTTPException, Depends, status
+from typing import Annotated, List, Optional
+from fastapi import APIRouter, HTTPException, Depends, status, Query
 from sqlalchemy.orm import Session, selectinload
-from sqlalchemy import func, select
+from sqlalchemy import func, select, or_, desc, asc
 from utils.dependencies import require_role
 from models.user import User, RoleEnum
 from models.venue_category import VenueCategory
 from models.venue import Venue, StatusEnum
 from models.venue_image import VenueImage
-from schemas.venue import VenueOut, VenueCreate, VenueUpdate
+from schemas.venue import VenueOut, VenueCreate, VenueUpdate, VenuePaginatedResponse, HomePageResponse
 from database import get_db
 from utils.dependencies import get_current_user
+from enum import Enum
 
 
 router = APIRouter()
+
+
+class AvailabilityEnum(Enum):
+    HOURLY = "hourly"
+    DAILY = "daily"
+    BOTH = "both"
 
 
 @router.post(
@@ -73,20 +80,129 @@ def create_venue(venue_create: VenueCreate,
 
 @router.get(
     "/",
-    response_model=List[VenueOut],
+    response_model=VenuePaginatedResponse,
     status_code=status.HTTP_200_OK
 )
-def get_venues(db: Annotated[Session, Depends(get_db)]):
+def get_venues(db: Annotated[Session, Depends(get_db)],
+               search: Optional[str] = None,
+               city: Optional[str] = None,
+               category_id: Optional[int] = None,
+               availability_type: Optional[AvailabilityEnum] = None,
+               page: int = Query(default=1, ge=1),
+               limit: int = Query(default=16, ge=1, le=200)
+               ):
+
+    query = [
+        Venue.status == StatusEnum.ACTIVE
+    ]
+
+    if search and search.strip():
+        search_value = f"%{search.strip().lower()}%"
+        query.append(
+            or_(
+                Venue.name.ilike(search_value),
+                Venue.description.ilike(search_value),
+                Venue.city.ilike(search_value),
+                Venue.address_line.ilike(search_value),
+                Venue.amenities.ilike(search_value)
+            )
+        )
+
+    if city and city.strip():
+        query.append(Venue.city.ilike(f"%{city.strip()}%"))
+
+    if category_id:
+        query.append(Venue.category_id == category_id)
+
+    if availability_type:
+        if availability_type == AvailabilityEnum.HOURLY:
+            query.append(Venue.supports_hourly == True)
+
+        elif availability_type == AvailabilityEnum.DAILY:
+            query.append(Venue.supports_daily == True)
+
+        elif availability_type == AvailabilityEnum.BOTH:
+            query.append(Venue.supports_hourly == True)
+            query.append(Venue.supports_daily == True)
+
+    offset = (page - 1) * limit
+
+    total = db.execute(
+        select(func.count(Venue.id)).where(*query)
+    ).scalar_one()
 
     result = db.execute(
         select(Venue)
         .options(selectinload(Venue.images))
-        .where(Venue.status == StatusEnum.ACTIVE)
+        .where(*query)
+        .offset(offset)
+        .limit(limit)
     )
 
-    existing_venues = result.scalars().all()
+    venues = result.scalars().all()
+    return {
+        "items": venues,
+        "total": total,
+        "page": page,
+        "limit": limit
+    }
 
-    return existing_venues
+
+@router.get(
+    "/homepage",
+    response_model=HomePageResponse,
+    status_code=status.HTTP_200_OK,
+)
+def get_homepage_venues(db: Annotated[Session, Depends(get_db)]):
+
+    toprated_query = db.execute(
+        select(Venue)
+        .options(selectinload(Venue.images))
+        .where(Venue.status == StatusEnum.ACTIVE)
+        .order_by(desc(Venue.created_at))
+        .limit(4)
+    ).scalars().all()
+
+    recently_added_query = db.execute(
+        select(Venue)
+        .options(selectinload(Venue.images))
+        .where(Venue.status == StatusEnum.ACTIVE)
+        .order_by(desc(Venue.created_at))
+        .limit(4)
+    ).scalars().all()
+
+    active_categories_query = db.execute(
+        select(VenueCategory)
+        .where(VenueCategory.is_active == True)
+        .order_by(VenueCategory.id.asc())
+        .limit(2)
+    ).scalars().all()
+
+    category_sections = []
+
+    for category in active_categories_query:
+        venues = db.execute(
+            select(Venue)
+            .options(selectinload(Venue.images))
+            .where(
+                Venue.status == StatusEnum.ACTIVE,
+                Venue.category_id == category.id
+            )
+            .order_by(desc(Venue.created_at))
+            .limit(4)
+        ).scalars().all()
+
+        category_sections.append(
+            {
+                "category": category,
+                "venues": venues
+            }
+        )
+    return {
+        "top_rated": toprated_query,
+        "recently_added": recently_added_query,
+        "categories": category_sections
+    }
 
 
 @router.get(

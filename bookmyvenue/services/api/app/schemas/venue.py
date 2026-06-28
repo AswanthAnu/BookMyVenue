@@ -3,6 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field, PositiveInt, model_validator, ValidationError
 from typing import Optional, List
 from .venue_image import VenueImageOut
+from .venue_category import VenueCategoryOut
 
 
 class VenueCreate(BaseModel):
@@ -72,3 +73,21 @@ class VenueOut(BaseModel):
     images: list[VenueImageOut] = Field(default_factory=list)
 
     model_config = {"from_attributes": True}
+
+
+class VenuePaginatedResponse(BaseModel):
+    items: list[VenueOut]
+    total: int
+    page: int
+    limit: int
+
+
+class CategoryWithVenues(BaseModel):
+    category: VenueCategoryOut
+    venues: list[VenueOut]
+
+
+class HomePageResponse(BaseModel):
+    top_rated: list[VenueOut]
+    recently_added: list[VenueOut]
+    categories: list[CategoryWithVenues]
