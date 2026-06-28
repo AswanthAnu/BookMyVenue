@@ -1,7 +1,7 @@
 import api from "./axios";
 
 export async function createVenue(data, token) {
-    const response = await api.post("/api/venues/", data, {
+    const response = await api.post("/api/venues", data, {
         headers: {
             Authorization: `Bearer ${token}`,
         },
@@ -33,11 +33,27 @@ export async function getMyVenues(token) {
 }
 
 export async function updateVenue(id, data, token) {
-    const response = await api.put(`/api/venues/update/${id}`, data, {
+    const response = await api.put(`/api/venues/${id}`, data, {
         headers: {
             Authorization: `Bearer ${token}`,
         },
     });
+
+    return response.data;
+}
+
+// New function for filtered / paginated venues
+export async function getVenues(params = {}) {
+    const response = await api.get("/api/venues", {
+        params: params,
+    });
+
+    return response.data;
+}
+
+// New function for homepage data
+export async function getHomepageData() {
+    const response = await api.get("/api/venues/homepage");
 
     return response.data;
 }
